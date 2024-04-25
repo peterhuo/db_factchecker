@@ -7,14 +7,13 @@ from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
-from langchain.agents import AgentExecutor
 from langchain import hub
 from langchain.agents import AgentExecutor, create_self_ask_with_search_agent
 from langchain_community.llms import Fireworks
 from langchain_community.tools.tavily_search import TavilyAnswer
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
-from langchain_openai import ChatOpenAI
+
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
