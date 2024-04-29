@@ -114,7 +114,8 @@ function App() {
             size="large"
             onSearch={handleSearch}
             style={{ width: '50vw', }}
-            loading={isLoading || (!isUploaded && agentType === 'datasheet')}
+            disabled={agentType === 'datasheet' && !isUploaded}
+            loading={isLoading}
           />
           <Title level={4}>
             {sqlResult}
