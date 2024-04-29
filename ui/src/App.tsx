@@ -18,8 +18,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchResult, setSearchResult] = useState('');
   const [agentType, setAgentType] = useState('wiki');
-  const [isUploaded, setIsUploaded] = useState(true);
+  const [isUploaded, setIsUploaded] = useState(false);
   const [db_uri, setDbUri] = useState('');
+  const [sqlResult, setSqlResult] = useState('');
 
   const handleChangeAgent = (e: RadioChangeEvent) => {
     console.log('radio checked', e.target.value);
@@ -49,6 +50,7 @@ function App() {
 
   const handleUpload = async () => {
     try {
+      setIsUploaded(false);
       const formData = new FormData();
       if (!file) {
         throw new Error('No file selected');
@@ -62,6 +64,7 @@ function App() {
       setDbUri(response.data.uri);
       setIsUploaded(response.data.status === 'Success');
       console.log(response.data)
+      setIsUploaded(true);
     } catch (error) {
       console.error('Error uploading file:', error);
     }
@@ -73,6 +76,8 @@ function App() {
       const response = await axios.post('http://localhost:5001/checkData', { query: value, db_uri: db_uri });
       setSearchResult(response.data.result);
       setIsLoading(false);
+      setSqlResult(response.data.sqlQuery);
+      console.log(response)
     } catch (error) {
       console.error('Error searching:', error);
     }
@@ -109,8 +114,11 @@ function App() {
             size="large"
             onSearch={handleSearch}
             style={{ width: '50vw', }}
-            loading={isLoading}
+            loading={isLoading || (!isUploaded && agentType === 'datasheet')}
           />
+          <Title level={4}>
+            {sqlResult}
+          </Title>
           <Title level={2}>
             {searchResult}
           </Title>

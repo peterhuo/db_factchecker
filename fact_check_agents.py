@@ -13,8 +13,23 @@ from langchain_community.llms import Fireworks
 from langchain_community.tools.tavily_search import TavilyAnswer
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+
+
+class SQLHandler(BaseCallbackHandler):
+    def __init__(self):
+        self.sql_result = []
+
+    def on_agent_action(self, action, **kwargs):
+        """Run on agent action. if the tool being used is sql_db_query,
+         it means we're submitting the sql and we can 
+         record it as the final sql"""
+
+        if action.tool in ["sql_db_query_checker", "sql_db_query"]:
+            self.sql_result.append(action.tool_input)
 
 
 class CustomWikiAgent:
@@ -132,10 +147,12 @@ class DatabaseAgent:
         agent_executor = create_sql_agent(
             llm, db=db, agent_type="openai-tools", verbose=True)
 
-        response = agent_executor.invoke({"input": self.claim})
-        print("response ======= ", response)
+        handler = SQLHandler()
+        response = agent_executor.invoke(
+            {"input": self.claim}, {'callbacks': [handler]})
+        sql_queries = handler.sql_result
         final_answer = response.get("output", "")
-        return final_answer
+        return final_answer, sql_queries
 
 
 # for running the api in terminal

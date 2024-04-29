@@ -52,8 +52,10 @@ def check_data():
     query = request.json.get('query')
     db_uri = request.json.get('db_uri')
     print("uri1:", db_uri)
-    result = DatabaseAgent(claim=query, db_uri=db_uri).execute_agent()
-    return jsonify({'result': result})
+    result, sqlQuery = DatabaseAgent(
+        claim=query, db_uri=db_uri).execute_agent()
+    print("sql:",  sqlQuery)
+    return jsonify({'result': result, 'sqlQuery': sqlQuery[0]['query']})
 
 
 if __name__ == '__main__':
