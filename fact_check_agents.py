@@ -49,34 +49,57 @@ class CustomWikiAgent:
             llm_tools), tools=tools, verbose=True)
 
         response = agent_executor.invoke({"input": self.claim})
+        print('---------', response)
         final_answer = response.get("output", "")
         return final_answer
 
-    def extract_keywords(self, n=2):
-        response = llm.invoke("What are the top {n} most important keywords to search for on Wikipedia to verify claim" + self.claim +
+    def extract_keywords(self):
+        response = llm.invoke("What are the most important object keywords to search for on Wikipedia to verify claim" + self.claim +
                               " Please give the answer in a common delimited sentence with no space from the most important to the least important.")
         response = dict(response)['content'].split(',')
         return response
 
     def get_wikipedia_info(self, keywords, max_chars=4000):
-        result = ""
+        result = {}
         for keyword in keywords:
             docs = WikipediaLoader(
                 query=keyword, load_max_docs=1, doc_content_chars_max=max_chars).load()
             if docs:
-                result += docs[0].page_content
+                wiki_key = docs[0].metadata['title']
+                result[wiki_key] = docs[0]
         return result
+
+    def verify(claim):
+        """Returns yes or no to verify a claim"""
+        keywords = llm.invoke("What are the most important object keywords to search for on Wikipedia to verify claim" + claim +
+                              " Please give the answer in a common delimited sentence with no space from the most important to the least important.")
+        keywords = dict(keywords)['content'].split(',')
+        result = {}
+        links = {}
+        for keyword in keywords:
+            docs = WikipediaLoader(
+                query=keyword, load_max_docs=1, doc_content_chars_max=4000).load()
+            if docs:
+                wiki_key = docs[0].metadata['title']
+                result[wiki_key] = docs[0].page_content
+                links[wiki_key] = docs[0].metadata['source']
+
+        prompt = "You are a powerful fact checker. Given input claim and wiki information, you will respond Yes or No with a short justification citing from the wiki information."
+        response = llm.invoke(
+            prompt + claim + " Given this information: " + str(result))
+        return {'result': dict(response)['content'], 'source': links}
 
     def get_tools(self):
         @tool
-        def verify_claim(claim: str) -> str:
-            """Returns the yes or no to verify a claim"""
+        def verify_claim(claim: str):
+            """Returns yes or no to verify a claim"""
             keywords = self.extract_keywords()
             wiki_info = self.get_wikipedia_info(keywords)
+            print(wiki_info)
 
             response = llm.invoke(
-                "Verify the following claim " + claim + " Given this information: " + wiki_info)
-            return dict(response)['content']
+                "Verify the following claim with explaination" + claim + " Given this information: " + str(wiki_info))
+            return {'response': dict(response)['content'], 'wiki': wiki_info}
 
         tools = [verify_claim]
         llm_with_tools = llm.bind(

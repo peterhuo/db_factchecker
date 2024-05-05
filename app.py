@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
-from fact_check_agents import CustomWikiAgent, DatabaseAgent
+from fact_check_agents import CustomWikiAgent, DatabaseAgent, SelfAskSearchAgent
 import os
 import sqlite3
 import pandas as pd
@@ -19,11 +19,11 @@ def search():
 
     # Perform your search logic here (replace this with your actual search function)
     # search_result = f'Searching for: {search_query}'
-    search_result = CustomWikiAgent(claim=search_query).execute_agent()
-    print(search_result)
+    search_result = CustomWikiAgent.verify(search_query)
+    print("result", search_result)
 
     # Return the search result as JSON
-    return jsonify({'result': search_result})
+    return jsonify(search_result)
 
 
 @app.route('/upload', methods=['POST'])
@@ -56,6 +56,13 @@ def check_data():
         claim=query, db_uri=db_uri).execute_agent()
     print("sql:",  sqlQuery)
     return jsonify({'result': result, 'sqlQuery': sqlQuery[0]['query']})
+
+
+@app.route('/searchTavily', methods=['POST'])
+def searchTavily():
+    query = request.json.get('query')
+    result = SelfAskSearchAgent(claim=query).execute_agent()
+    return jsonify({"result": result})
 
 
 if __name__ == '__main__':

@@ -7,20 +7,23 @@ import axios from 'axios';
 import { Typography } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import { Radio } from 'antd';
+import { Button } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
 
 function App() {
-  const slogan = 'Verify any claim ;)))';
+  const slogan = 'fact check anything ;)))';
 
   const { Search } = Input;
   const [isLoading, setIsLoading] = useState(false);
   const [searchResult, setSearchResult] = useState('');
   const [agentType, setAgentType] = useState('wiki');
-  const [isUploaded, setIsUploaded] = useState(false);
+  const [isUploaded, setIsUploaded] = useState(true);
   const [db_uri, setDbUri] = useState('');
   const [sqlResult, setSqlResult] = useState('');
+  const [sourcelinks, setSourceLinks] = useState<{ [key: string]: string }>({});
 
   const handleChangeAgent = (e: RadioChangeEvent) => {
     console.log('radio checked', e.target.value);
@@ -33,7 +36,9 @@ function App() {
     try {
       setIsLoading(true);
       const response = await axios.post('http://localhost:5001/searchWiki', { query: value });
+      console.log(response.data.source);
       setSearchResult(response.data.result);
+      setSourceLinks(response.data.source);
       setIsLoading(false);
     } catch (error) {
       console.error('Error searching:', error);
@@ -83,12 +88,27 @@ function App() {
     }
   };
 
+  const handleSearchTavily = async (value: string) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.post('http://localhost:5001/searchTavily', { query: value });
+      setSearchResult(response.data.result);
+      setIsLoading(false);
+      console.log(response)
+    } catch (error) {
+      console.error('Error searching:', error);
+    }
+  }
+
   const handleSearch = async (value: string) => {
     if (agentType === 'wiki') {
       handleSearchWiki(value);
     }
     else if (agentType === 'datasheet') {
       handleSearchDatasheet(value);
+    }
+    else if (agentType === 'tavily') {
+      handleSearchTavily(value);
     }
   }
 
@@ -107,9 +127,10 @@ function App() {
             <Radio value={'tavily'}>Tavily Search</Radio>
           </Radio.Group>
           {agentType === 'datasheet' && <div><input type="file" onChange={handleFileChange} />
-            <button onClick={handleUpload}>Upload</button></div>}
+            <Button icon={<UploadOutlined />} onClick={handleUpload} loading={!isUploaded}>Upload</Button></div>}
+          {/* <button onClick={handleUpload}>Upload</button></div>} */}
           <Search
-            placeholder="is Earth flat?"
+            placeholder="Enter your question"
             enterButton="Check"
             size="large"
             onSearch={handleSearch}
@@ -120,9 +141,13 @@ function App() {
           <Title level={4}>
             {sqlResult}
           </Title>
-          <Title level={2}>
-            {searchResult}
-          </Title>
+          {searchResult !== '' && <div><Title level={2}>
+            {searchResult}</Title>
+            <Title level={4}>
+              {Object.keys(sourcelinks).length > 0 && <div>Source:</div>}
+              {Object.keys(sourcelinks).map((key) => {
+                return <a href={sourcelinks[key]} target="_blank">{key} </a>
+              })}</Title> </div>}
         </Space>
       </Space>
     </div>
