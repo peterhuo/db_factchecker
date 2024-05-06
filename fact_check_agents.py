@@ -130,7 +130,12 @@ class SelfAskSearchAgent:
     """
 
     def __init__(self, claim):
-        self.claim = claim
+        messages = [
+            ("system", "Given input claim, you will change the question claim to a statement claim."),
+            ("human", claim),
+        ]
+        ans = llm.invoke(messages)
+        self.claim = ans.content
 
     def execute_agent(self):
         agent_executor = AgentExecutor(agent=self.create_agent(
@@ -177,6 +182,22 @@ class DatabaseAgent:
         final_answer = response.get("output", "")
         return final_answer, sql_queries
 
+
+class GPTAgent:
+    """
+    The Chat GPT Agent. 
+    """
+
+    def __init__(self, claim):
+        self.claim = claim
+
+    def execute_agent(self):
+        messages = [
+            ("system", "You are a powerful fact checker. Given input claim, you will respond Yes or No."),
+            ("human", self.claim),
+        ]
+        ans = llm.invoke(messages)
+        return ans.content
 
 # for running the api in terminal
 if __name__ == "__main__":
