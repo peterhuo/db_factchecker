@@ -213,7 +213,7 @@ function App() {
               {agentType !== "pdfwiki" && (
                 <Title level={2}>{searchResult}</Title>
               )}
-              {agentType == "pdfwiki" && <pre>{searchResult}</pre>}
+              {agentType == "pdfwiki" && <pre style={{ maxWidth: '75vw', whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{searchResult}</pre>}
               {agentType === "wiki" && (
                 <Title level={4}>
                   {Object.keys(sourcelinks).length > 0 && <div>Source:</div>}

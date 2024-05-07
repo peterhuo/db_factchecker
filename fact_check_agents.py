@@ -119,15 +119,17 @@ class CustomWikiAgent:
             | llm_tools
             | OpenAIFunctionsAgentOutputParser())
         return agent
-    
+
+
 class CustomWikiAgentMulti:
     def __init__(self, claim):
-        response = llm.invoke("From the following text, extract the sentences that contain a fact in them. Return your reponse in a list where each item ends with a '-'" + claim)
+        response = llm.invoke(
+            "From the following text, extract the sentences that contain a fact in them. Return your reponse in a list where each item ends with a '-'" + claim)
         self.claim = response.content.split("\n")
 
     def execute_agent(self, maxN=3):
         final_answer = []
-        for i in range(min(len(self.claim),maxN)):
+        for i in range(min(len(self.claim), maxN)):
             agent = CustomWikiAgent(self.claim[i])
             ans = agent.execute_agent()
             final_answer += [ans + "\n"]
@@ -212,6 +214,7 @@ class GPTAgent:
         ]
         ans = llm.invoke(messages)
         return ans.content
+
 
 # for running the api in terminal
 if __name__ == "__main__":
