@@ -71,7 +71,7 @@ class CustomWikiAgent:
 
     def verify(claim):
         """Returns yes or no to verify a claim"""
-        keywords = llm.invoke("What are the most important object keywords to search for on Wikipedia to verify claim" + claim +
+        keywords = llm.invoke("What are the most important keywords to search for on Wikipedia to verif the claim: " + claim +
                               " Please give the answer in a common delimited sentence with no space from the most important to the least important.")
         keywords = dict(keywords)['content'].split(',')
         result = {}
@@ -84,7 +84,7 @@ class CustomWikiAgent:
                 result[wiki_key] = docs[0].page_content
                 links[wiki_key] = docs[0].metadata['source']
 
-        prompt = "You are a powerful fact checker. Given input claim and wiki information, you will respond Yes or No with a short justification citing from the wiki information."
+        prompt = "You are a powerful fact checker. Given input claim and wiki information, you will respond yes or no with a brief explanation from the provided wiki information."
         response = llm.invoke(
             prompt + claim + " Given this information: " + str(result))
         return {'result': dict(response)['content'], 'source': links}
@@ -98,7 +98,7 @@ class CustomWikiAgent:
             print(wiki_info)
 
             response = llm.invoke(
-                "Verify the following claim with explaination" + claim + " Given this information: " + str(wiki_info))
+                "Verify the following claim" + claim + " Given this information: " + str(wiki_info))
             return {'response': dict(response)['content'], 'wiki': wiki_info}
 
         tools = [verify_claim]
@@ -108,7 +108,7 @@ class CustomWikiAgent:
 
     def create_agent(self, llm_tools):
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a powerful fact checker. Given input claim and relevant informaiton, you will respond Yes or No with a short justification citing from the wiki information."),
+            ("system", "You are a powerful fact checker. Given input claim and relevant informaiton, you will respond yes or no with a brief explanation citing from the provided wikipedia information."),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),])
 
@@ -119,6 +119,19 @@ class CustomWikiAgent:
             | llm_tools
             | OpenAIFunctionsAgentOutputParser())
         return agent
+    
+class CustomWikiAgentMulti:
+    def __init__(self, claim):
+        response = llm.invoke("From the following text, extract the sentences that contain a fact in them. Return your reponse in a list where each item ends with a '-'" + claim)
+        self.claim = response.content.split("\n")
+
+    def execute_agent(self, maxN=3):
+        final_answer = []
+        for i in range(min(len(self.claim),maxN)):
+            agent = CustomWikiAgent(self.claim[i])
+            ans = agent.execute_agent()
+            final_answer += [ans + "\n"]
+        return self.claim, final_answer
 
 
 class SelfAskSearchAgent:
@@ -130,12 +143,13 @@ class SelfAskSearchAgent:
     """
 
     def __init__(self, claim):
-        messages = [
-            ("system", "Given input claim, you will change the question claim to a statement claim."),
-            ("human", claim),
-        ]
-        ans = llm.invoke(messages)
-        self.claim = ans.content
+        # messages = [
+        #     ("system", "Given input claim, you will change the question claim to a statement claim."),
+        #     ("human", claim),
+        # ]
+        # ans = llm.invoke(messages)
+        # self.claim = ans.content
+        self.claim = claim
 
     def execute_agent(self):
         agent_executor = AgentExecutor(agent=self.create_agent(

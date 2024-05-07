@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
-from fact_check_agents import CustomWikiAgent, DatabaseAgent, SelfAskSearchAgent
+from fact_check_agents import CustomWikiAgent, DatabaseAgent, SelfAskSearchAgent, CustomWikiAgentMulti
 import os
 import sqlite3
 import pandas as pd
 from langchain_community.utilities.sql_database import SQLDatabase
+from pypdf import PdfReader
 
 
 app = Flask(__name__)
@@ -25,6 +26,30 @@ def search():
     # Return the search result as JSON
     return jsonify(search_result)
 
+@app.route('/uploadPDFAndSearch', methods=['POST'])
+def upload_PDF():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'})
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    if file:
+        reader = PdfReader(file.filename) 
+        text = ""
+        for i in range(len(reader.pages)):
+            page = reader.pages[i]
+            text += page.extract_text()
+
+        claims, search_result = CustomWikiAgentMulti(claim=text).execute_agent()
+        
+        response = ""
+        assert len(claims) == len(search_result)
+        for i in range(len(claims)):
+            response += "Originial sentence from PDF: " + claims[i] + "\n"
+            response += "FactCheck says: " + search_result[i] + "\n\n"
+    return jsonify({'status': 'Success', 'result': response})
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
